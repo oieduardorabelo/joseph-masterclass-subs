@@ -5,186 +5,35 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Communication Masterclass - Joseph</title>
 <style>
-  :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
-  .wrapper { max-width: 960px; margin: 0 auto; padding: 16px; }
-  h1 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
-  .credit { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
-  .video-container { position: relative; width: 100%; background: #000; border-radius: 8px; overflow: hidden; }
-  video { width: 100%; display: block; border-radius: 8px; }
-  video::cue { background: rgba(0,0,0,0.7); color: #fff; font-size: 18px; line-height: 1.4; }
-  .controls { display: flex; gap: 8px; margin-top: 12px; align-items: center; flex-wrap: wrap; }
-  .btn { padding: 6px 14px; border: 1px solid var(--border); background: var(--card); color: var(--text); border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.15s; }
-  .btn:hover { border-color: var(--accent); }
-  .btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .transcript { margin-top: 20px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .transcript-header { background: var(--card); padding: 10px 16px; font-size: 14px; font-weight: 600; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-  .transcript-body { max-height: 400px; overflow-y: auto; padding: 8px 0; }
-  .sub-entry { display: grid; grid-template-columns: 70px 1fr 1fr; gap: 8px; padding: 6px 16px; cursor: pointer; transition: background 0.1s; align-items: start; }
-  .sub-entry:hover { background: rgba(88,166,255,0.08); }
-  .sub-entry.active { background: rgba(88,166,255,0.15); }
-  .sub-entry .time { font-family: 'SF Mono', Menlo, monospace; font-size: 12px; color: var(--accent); padding-top: 2px; }
-  .sub-entry .en { font-size: 13px; color: var(--muted); }
-  .sub-entry .ja { font-size: 14px; }
-  .search-bar { margin-top: 12px; }
-  .search-bar input { width: 100%; padding: 8px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 14px; outline: none; }
-  .search-bar input:focus { border-color: var(--accent); }
-  @media (max-width: 600px) {
-    .sub-entry { grid-template-columns: 1fr; gap: 2px; }
-    video::cue { font-size: 14px; }
-  }
+  body { background: #000; }
+  video { width: 100vw; height: 100vh; display: block; }
+  video::cue { background: rgba(0,0,0,0.75); color: #fff; font-size: 1.2em; }
 </style>
 </head>
 <body>
-<div class="wrapper">
-  <h1>Communication Masterclass</h1>
-  <p class="credit">All credits to Joseph</p>
-
-  <div class="video-container">
-    <video id="player" controls crossorigin="anonymous">
-      <source id="video-src" src="https://github.com/oieduardorabelo/joseph-masterclass-subs/releases/download/v1.0/ePK37AtnIGX2tpc8.mp4" type="video/mp4">
-      <track id="track-en" label="English" kind="subtitles" srclang="en" src="en.vtt" default>
-      <track id="track-ja" label="Japanese" kind="subtitles" srclang="ja" src="ja.vtt">
-    </video>
-  </div>
-
-  <div class="controls">
-    <span style="font-size:13px;color:var(--muted)">Subtitles:</span>
-    <button class="btn active" data-sub="en">English</button>
-    <button class="btn" data-sub="ja">Japanese</button>
-    <button class="btn" data-sub="off">Off</button>
-  </div>
-
-  <div class="search-bar">
-    <input type="text" placeholder="Search transcript..." id="search">
-  </div>
-
-  <div class="transcript">
-    <div class="transcript-header">
-      <span>Transcript</span>
-      <span id="count" style="font-weight:400;font-size:12px;color:var(--muted)"></span>
-    </div>
-    <div class="transcript-body" id="transcript"></div>
-  </div>
-</div>
-
+<video id="player" controls autoplay>
+  <source src="https://github.com/oieduardorabelo/joseph-masterclass-subs/releases/download/v1.0/ePK37AtnIGX2tpc8.mp4" type="video/mp4">
+</video>
 <script>
 const player = document.getElementById('player');
-let entries = [];
-let activeIdx = -1;
 
-function parseSRT(text) {
-  return text.trim().split(/\n\n+/).map(block => {
-    const lines = block.trim().split('\n');
-    if (lines.length < 2) return null;
-    const ts = lines[1];
-    const m = ts.match(/(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[,.](\d{3})/);
-    if (!m) return null;
-    const start = +m[1]*3600 + +m[2]*60 + +m[3] + +m[4]/1000;
-    const end = +m[5]*3600 + +m[6]*60 + +m[7] + +m[8]/1000;
-    const text = lines.slice(2).join(' ').trim();
-    const timeStr = `${m[1]}:${m[2]}:${m[3]}`;
-    return { start, end, text, timeStr };
-  }).filter(Boolean);
+async function loadTrack(url, lang, label) {
+  const res = await fetch(url);
+  const srt = await res.text();
+  const vtt = 'WEBVTT\n\n' + srt.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+  const blob = new Blob([vtt], { type: 'text/vtt' });
+  const track = document.createElement('track');
+  track.kind = 'subtitles';
+  track.label = label;
+  track.srclang = lang;
+  track.src = URL.createObjectURL(blob);
+  if (lang === 'en') track.default = true;
+  player.appendChild(track);
 }
 
-function srtToVtt(text) {
-  return 'WEBVTT\n\n' + text.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
-}
-
-async function loadSubs() {
-  const [enRes, jaRes] = await Promise.all([fetch('en.srt'), fetch('ja.srt')]);
-  const [enText, jaText] = await Promise.all([enRes.text(), jaRes.text()]);
-
-  const enSubs = parseSRT(enText);
-  const jaSubs = parseSRT(jaText);
-
-  // Create VTT blobs for the video tracks
-  const enVtt = new Blob([srtToVtt(enText)], {type:'text/vtt'});
-  const jaVtt = new Blob([srtToVtt(jaText)], {type:'text/vtt'});
-  document.getElementById('track-en').src = URL.createObjectURL(enVtt);
-  document.getElementById('track-ja').src = URL.createObjectURL(jaVtt);
-
-  const len = Math.max(enSubs.length, jaSubs.length);
-  for (let i = 0; i < len; i++) {
-    entries.push({
-      start: (enSubs[i]||jaSubs[i]).start,
-      end: (enSubs[i]||jaSubs[i]).end,
-      timeStr: (enSubs[i]||jaSubs[i]).timeStr,
-      en: enSubs[i]?.text || '',
-      ja: jaSubs[i]?.text || '',
-    });
-  }
-  renderTranscript();
-}
-
-function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-function renderTranscript(query='') {
-  const el = document.getElementById('transcript');
-  const q = query.toLowerCase();
-  let html = '';
-  let shown = 0;
-  entries.forEach((e, i) => {
-    if (q && !e.en.toLowerCase().includes(q) && !e.ja.toLowerCase().includes(q)) return;
-    shown++;
-    const cls = i === activeIdx ? 'active' : '';
-    html += `<div class="sub-entry ${cls}" data-idx="${i}">
-      <div class="time">${e.timeStr}</div>
-      <div class="en">${esc(e.en)}</div>
-      <div class="ja">${esc(e.ja)}</div>
-    </div>`;
-  });
-  el.innerHTML = html;
-  document.getElementById('count').textContent = q ? `${shown}/${entries.length}` : `${entries.length} lines`;
-
-  el.querySelectorAll('.sub-entry').forEach(row => {
-    row.addEventListener('click', () => {
-      const idx = +row.dataset.idx;
-      player.currentTime = entries[idx].start;
-      player.play();
-    });
-  });
-}
-
-// Sync transcript with video
-player.addEventListener('timeupdate', () => {
-  const t = player.currentTime;
-  let newIdx = -1;
-  for (let i = 0; i < entries.length; i++) {
-    if (t >= entries[i].start && t < entries[i].end) { newIdx = i; break; }
-  }
-  if (newIdx !== activeIdx) {
-    activeIdx = newIdx;
-    document.querySelectorAll('.sub-entry').forEach(el => {
-      const idx = +el.dataset.idx;
-      el.classList.toggle('active', idx === activeIdx);
-    });
-    if (activeIdx >= 0) {
-      const active = document.querySelector('.sub-entry.active');
-      if (active) active.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    }
-  }
-});
-
-// Subtitle track toggle
-document.querySelectorAll('[data-sub]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('[data-sub]').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const mode = btn.dataset.sub;
-    for (const track of player.textTracks) {
-      if (mode === 'off') track.mode = 'disabled';
-      else if (track.language === mode) track.mode = 'showing';
-      else track.mode = 'disabled';
-    }
-  });
-});
-
-document.getElementById('search').addEventListener('input', e => renderTranscript(e.target.value));
-
-loadSubs();
+loadTrack('en.srt', 'en', 'English');
+loadTrack('ja.srt', 'ja', 'Japanese');
 </script>
 </body>
 </html>
