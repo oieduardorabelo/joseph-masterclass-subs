@@ -15,7 +15,7 @@ Use the CC button (⋮ menu) in the video player to switch between English and J
 
 All credits to [Joseph Tsar](https://josephtsar.com).
 
-- [YouTube](https://www.youtube.com/@Speakwithjoseph)
+- [YouTube](https://www.youtube.com/@ttsar)
 - [X / Twitter](https://x.com/joseph_tsar_)
 - [Udemy Courses](https://www.udemy.com/course/speak-articulately/)
 - [Apple Podcasts](https://podcasts.apple.com/podcast/joseph-tsar/id1812201786)
